@@ -1,0 +1,122 @@
+[
+  {
+    "arguments": [
+      "/usr/bin/cc",
+      "-Wall",
+      "-Wextra",
+      "-std=gnu11",
+      "-Iinclude",
+      "-O0",
+      "-g3",
+      "-DDEBUG",
+      "-fsanitize=address,undefined",
+      "-c",
+      "-o",
+      "build/core/cpu.o",
+      "src/core/cpu.c"
+    ],
+    "directory": "/home/Ylin/Arche-RV/arche-rv-iss",
+    "file": "/home/Ylin/Arche-RV/arche-rv-iss/src/core/cpu.c",
+    "output": "/home/Ylin/Arche-RV/arche-rv-iss/build/core/cpu.o"
+  },
+  {
+    "arguments": [
+      "/usr/bin/cc",
+      "-Wall",
+      "-Wextra",
+      "-std=gnu11",
+      "-Iinclude",
+      "-O0",
+      "-g3",
+      "-DDEBUG",
+      "-fsanitize=address,undefined",
+      "-c",
+      "-o",
+      "build/isa/isa.o",
+      "src/isa/isa.c"
+    ],
+    "directory": "/home/Ylin/Arche-RV/arche-rv-iss",
+    "file": "/home/Ylin/Arche-RV/arche-rv-iss/src/isa/isa.c",
+    "output": "/home/Ylin/Arche-RV/arche-rv-iss/build/isa/isa.o"
+  },
+  {
+    "arguments": [
+      "/usr/bin/cc",
+      "-Wall",
+      "-Wextra",
+      "-std=gnu11",
+      "-Iinclude",
+      "-O0",
+      "-g3",
+      "-DDEBUG",
+      "-fsanitize=address,undefined",
+      "-c",
+      "-o",
+      "build/isa/isa_i.o",
+      "src/isa/isa_i.c"
+    ],
+    "directory": "/home/Ylin/Arche-RV/arche-rv-iss",
+    "file": "/home/Ylin/Arche-RV/arche-rv-iss/src/isa/isa_i.c",
+    "output": "/home/Ylin/Arche-RV/arche-rv-iss/build/isa/isa_i.o"
+  },
+  {
+    "arguments": [
+      "/usr/bin/cc",
+      "-Wall",
+      "-Wextra",
+      "-std=gnu11",
+      "-Iinclude",
+      "-O0",
+      "-g3",
+      "-DDEBUG",
+      "-fsanitize=address,undefined",
+      "-c",
+      "-o",
+      "build/isa/isa_m.o",
+      "src/isa/isa_m.c"
+    ],
+    "directory": "/home/Ylin/Arche-RV/arche-rv-iss",
+    "file": "/home/Ylin/Arche-RV/arche-rv-iss/src/isa/isa_m.c",
+    "output": "/home/Ylin/Arche-RV/arche-rv-iss/build/isa/isa_m.o"
+  },
+  {
+    "arguments": [
+      "/usr/bin/cc",
+      "-Wall",
+      "-Wextra",
+      "-std=gnu11",
+      "-Iinclude",
+      "-O0",
+      "-g3",
+      "-DDEBUG",
+      "-fsanitize=address,undefined",
+      "-c",
+      "-o",
+      "build/mem/ram.o",
+      "src/mem/ram.c"
+    ],
+    "directory": "/home/Ylin/Arche-RV/arche-rv-iss",
+    "file": "/home/Ylin/Arche-RV/arche-rv-iss/src/mem/ram.c",
+    "output": "/home/Ylin/Arche-RV/arche-rv-iss/build/mem/ram.o"
+  },
+  {
+    "arguments": [
+      "/usr/bin/cc",
+      "-Wall",
+      "-Wextra",
+      "-std=gnu11",
+      "-Iinclude",
+      "-O0",
+      "-g3",
+      "-DDEBUG",
+      "-fsanitize=address,undefined",
+      "-c",
+      "-o",
+      "build/main.o",
+      "src/main.c"
+    ],
+    "directory": "/home/Ylin/Arche-RV/arche-rv-iss",
+    "file": "/home/Ylin/Arche-RV/arche-rv-iss/src/main.c",
+    "output": "/home/Ylin/Arche-RV/arche-rv-iss/build/main.o"
+  }
+]
