@@ -28,8 +28,17 @@ u64 isa_exec(cpu_t *cpu, u32 inst)
     MATCH(0x33, (F7 == 0x01) ? exec_op_m(cpu, inst) : exec_op_i(cpu, inst));
     // OP-32
     MATCH(0x3B, (F7 == 0x01) ? exec_op_m32(cpu, inst) : exec_op_i32(cpu, inst));
-    DEFAULT((void)0);
+    // SYSTEM / CSR
+    MATCH(0x73, next_pc = exec_system(cpu, inst, next_pc));
+    // FENCE / FENCE.I
+    MATCH(0x0F, (void)0);
+    // ILLEGAL INST
+    DEFAULT({
+        cpu_trap(cpu, ILLEGAL_INSN, inst);
+        next_pc = cpu->pc;
+    });
     }
 
     return next_pc;
 }
+

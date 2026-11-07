@@ -38,3 +38,4 @@ void exec_op_i    (cpu_t *cpu, u32 inst);
 void exec_op_i32  (cpu_t *cpu, u32 inst);
 void exec_op_m    (cpu_t *cpu, u32 inst);
 void exec_op_m32  (cpu_t *cpu, u32 inst);
+u64  exec_system  (cpu_t *cpu, u32 inst, u64 next_pc);

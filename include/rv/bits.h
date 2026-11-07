@@ -1,18 +1,20 @@
 #pragma once
 
-#define MASK64(len) \
-    ((len) >= 64 ? UINT64_MAX : ((UINT64_C(1) << (len)) - 1))
 
-#define BITS(v, hi, lo) ({                          \
-    u64 _v  = (u64)(v);                             \
-    unsigned _hi = (unsigned)(hi);                  \
-    unsigned _lo = (unsigned)(lo);                  \
-    (_v >> _lo) & MASK64(_hi - _lo + 1);            \
-})
+#define MASK(len) \
+    ((len) >= 64 ? ~0ULL : ((1ULL << (len)) - 1ULL))
 
-#define SEXT(v, len) ({                             \
-    u64 _v = (u64)(v);                              \
-    unsigned _len = (unsigned)(len);                \
-    unsigned _shift = 64 - _len;                    \
-    (i64)(_v << _shift) >> _shift;                  \
-})
+#define SEXT(v, len) \
+    ((i64)((u64)(v) << (64 - (len))) >> (64 - (len)))
+
+#define _BITS(v, hi, lo) \
+    (((u64)(v) >> (lo)) & MASK((hi) - (lo) + 1))
+
+#define BITS(v, ...) \
+    _BITS(v, __VA_ARGS__)
+
+#define _BITS_SET(v, hi, lo, val) \
+    (((u64)(v) & ~(MASK((hi) - (lo) + 1) << (lo))) | (((u64)(val) & MASK((hi) - (lo) + 1)) << (lo)))
+
+#define BITS_SET(v, ...) \
+    _BITS_SET(v, __VA_ARGS__)
