@@ -24,8 +24,7 @@ SRCS        := $(shell find $(SRC_DIR) -type f -name '*.c')
 OBJS        := $(patsubst $(SRC_DIR)/%.c, $(BUILD_DIR)/%.o, $(SRCS))
 DEPS        := $(OBJS:.o=.d)
 
-.PHONY: all clean run
-
+.PHONY: all clean run test
 
 all: $(BUILD_DIR)/$(TARGET)
 
@@ -42,6 +41,16 @@ $(BUILD_DIR)/%.o: $(SRC_DIR)/%.c
 
 run: all
 	@./$(BUILD_DIR)/$(TARGET)
+
+test: all
+	@mkdir -p $(BUILD_DIR)
+	@riscv64-linux-gnu-gcc -march=rv64im_zicsr_zifencei -mabi=lp64 -mcmodel=medany -O2 \
+		-ffreestanding -fno-builtin -fno-stack-protector -fno-pie -no-pie \
+		-nostdlib -nostartfiles -T test/link.ld \
+		test/test.c -o $(BUILD_DIR)/test.elf
+	@riscv64-linux-gnu-objcopy -O binary $(BUILD_DIR)/test.elf $(BUILD_DIR)/test.bin
+	@./$(BUILD_DIR)/$(TARGET) $(BUILD_DIR)/test.bin
+	@echo "[test] PASS"
 
 
 clean:
