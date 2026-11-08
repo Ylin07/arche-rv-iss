@@ -284,6 +284,77 @@ static int test_trap(void)
     return 0;
 }
 
+static int test_a(void)
+{
+    volatile u64 *p = (volatile u64 *)0x80007000ULL;
+    u64 old, status, value;
+
+#define AMO_D(name, input, expected_old, expected_new)                    \
+    do {                                                                    \
+        value = (input);                                                    \
+        __asm__ volatile (name " %0, %1, (%2)"                            \
+                          : "=r"(old) : "r"(value), "r"(p) : "memory"); \
+        if (old != (expected_old) || *p != (expected_new)) return __LINE__; \
+    } while (0)
+#define AMO_W(name, input, expected_old, expected_new)                    \
+    do {                                                                    \
+        value = (input);                                                    \
+        __asm__ volatile (name " %0, %1, (%2)"                            \
+                          : "=r"(old) : "r"(value), "r"(p) : "memory"); \
+        if ((uint32_t)old != (uint32_t)(expected_old) ||                   \
+            *(volatile uint32_t *)p != (uint32_t)(expected_new))           \
+            return __LINE__;                                                \
+    } while (0)
+
+    *p = 10;
+    __asm__ volatile ("lr.d %0, (%1)" : "=r"(old) : "r"(p) : "memory");
+    if (old != 10) return 1;
+    value = 20;
+    __asm__ volatile ("sc.d %0, %1, (%2)" : "=r"(status)
+                      : "r"(value), "r"(p) : "memory");
+    if (status != 0 || *p != 20) return 2;
+
+    AMO_D("amoswap.d", 7, 20, 7);
+    AMO_D("amoadd.d", 3, 7, 10);
+    AMO_D("amoxor.d", 0x0f, 10, 5);
+    AMO_D("amoand.d", 0x03, 5, 1);
+    AMO_D("amoor.d", 0x10, 1, 0x11);
+    AMO_D("amomin.d", (u64)-3, 0x11, (u64)-3);
+    AMO_D("amomax.d", 5, (u64)-3, 5);
+    AMO_D("amominu.d", 3, 5, 3);
+    AMO_D("amomaxu.d", 9, 3, 9);
+
+    *(volatile uint32_t *)p = 10;
+    AMO_W("amoswap.w", 7, 10, 7);
+    AMO_W("amoadd.w", 3, 7, 10);
+    AMO_W("amoxor.w", 0x0f, 10, 5);
+    AMO_W("amoand.w", 0x03, 5, 1);
+    AMO_W("amoor.w", 0x10, 1, 0x11);
+    AMO_W("amomin.w", (uint32_t)-3, 0x11, (uint32_t)-3);
+    AMO_W("amomax.w", 5, (uint32_t)-3, 5);
+    AMO_W("amominu.w", 3, 5, 3);
+    AMO_W("amomaxu.w", 9, 3, 9);
+
+    __asm__ volatile ("sc.d %0, %1, (%2)" : "=r"(status)
+                      : "r"(20), "r"(p) : "memory");
+    if (status != 1) return 3;
+    __asm__ volatile ("lr.d %0, (%1)" : "=r"(old) : "r"(p) : "memory");
+    __asm__ volatile ("sd %1, 0(%0)" :: "r"(p), "r"(30) : "memory");
+    __asm__ volatile ("sc.d %0, %1, (%2)" : "=r"(status)
+                      : "r"(40), "r"(p) : "memory");
+    if (status != 1) return 4;
+    *p = 30;
+    __asm__ volatile ("lr.d %0, (%1)" : "=r"(old) : "r"(p) : "memory");
+    AMO_D("amoadd.d", 1, 30, 31);
+    __asm__ volatile ("sc.d %0, %1, (%2)" : "=r"(status)
+                      : "r"(40), "r"(p) : "memory");
+    if (status != 1) return 5;
+
+#undef AMO_D
+#undef AMO_W
+    return 0;
+}
+
 static int test_csr(void)
 {
     u64 cycle, time, instret, hartid, mstatus;
@@ -304,7 +375,7 @@ int test_main(void)
     int (*tests[])(void) = { test_alu, test_word, test_memory, test_control,
                              test_store_widths, test_load_sign, test_branches,
                              test_m, test_remaining_i, test_all_branches,
-                             test_csr, test_csr_alias, test_csr_ops, test_trap };
+                             test_csr, test_csr_alias, test_csr_ops, test_trap, test_a };
     for (unsigned i = 0; i < sizeof(tests) / sizeof(tests[0]); i++)
         if (tests[i]()) return (int)i + 1;
     return 0;
