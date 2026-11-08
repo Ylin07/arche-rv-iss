@@ -44,7 +44,7 @@ run: all
 
 test: all
 	@mkdir -p $(BUILD_DIR)
-	@riscv64-linux-gnu-gcc -march=rv64im_zicsr_zifencei -mabi=lp64 -mcmodel=medany -O2 \
+	@riscv64-linux-gnu-gcc -march=rv64ima_zicsr_zifencei -mabi=lp64 -mcmodel=medany -O2 \
 		-ffreestanding -fno-builtin -fno-stack-protector -fno-pie -no-pie \
 		-nostdlib -nostartfiles -T test/link.ld \
 		test/test.c -o $(BUILD_DIR)/test.elf

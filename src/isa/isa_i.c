@@ -45,6 +45,7 @@ void exec_load(cpu_t *cpu, u32 inst)
 
 void exec_store(cpu_t *cpu, u32 inst)
 {
+    cpu->res_valid = false;
     switch (F3) {
     // SB
     MATCH(0x0, mem_write8(PA_S, (u8)RS2));

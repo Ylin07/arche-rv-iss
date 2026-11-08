@@ -30,6 +30,8 @@ u64 isa_exec(cpu_t *cpu, u32 inst)
     MATCH(0x3B, (F7 == 0x01) ? exec_op_m32(cpu, inst) : exec_op_i32(cpu, inst));
     // SYSTEM / CSR
     MATCH(0x73, next_pc = exec_system(cpu, inst, next_pc));
+    // AMO
+    MATCH(0x2F, exec_op_a(cpu, inst));
     // FENCE / FENCE.I
     MATCH(0x0F, (void)0);
     // ILLEGAL INST

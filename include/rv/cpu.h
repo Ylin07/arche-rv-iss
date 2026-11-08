@@ -20,6 +20,8 @@ typedef struct {
     u64 cycle;
     u64 instret;
     priv_t priv;
+    u64  res_addr;
+    bool res_valid;
 } cpu_t;
 
 void cpu_reset(cpu_t *cpu, u64 reset_pc);

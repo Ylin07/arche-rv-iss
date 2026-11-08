@@ -8,6 +8,7 @@
 #define RS1_I      BITS(inst, 19, 15)
 #define RS2_I      BITS(inst, 24, 20)
 #define F3         BITS(inst, 14, 12)
+#define F5         BITS(inst, 31, 27)
 #define F7         BITS(inst, 31, 25)
 
 #define RS1        cpu_get_reg(cpu, RS1_I)
@@ -24,6 +25,7 @@
 
 #define PA_I       (RS1 + IMM_I)
 #define PA_S       (RS1 + IMM_S)
+#define PA_A       (RS1)
 
 #define MATCH(pattern, expr)    case (pattern): expr; break
 #define DEFAULT(expr)           default: expr; break
@@ -39,3 +41,4 @@ void exec_op_i32  (cpu_t *cpu, u32 inst);
 void exec_op_m    (cpu_t *cpu, u32 inst);
 void exec_op_m32  (cpu_t *cpu, u32 inst);
 u64  exec_system  (cpu_t *cpu, u32 inst, u64 next_pc);
+void exec_op_a    (cpu_t *cpu, u32 inst);
