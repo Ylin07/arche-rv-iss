@@ -1,5 +1,6 @@
 #include "internal.h"
 #include "rv/types.h"
+#include "rv/trap.h"
 
 u64 isa_exec(cpu_t *cpu, u32 inst)
 {
@@ -13,7 +14,11 @@ u64 isa_exec(cpu_t *cpu, u32 inst)
     // JAL
     MATCH(0x6F, (SET_RD(next_pc), next_pc = cpu->pc + IMM_J));         
     // JALR
-    MATCH(0x67, (SET_RD(next_pc), next_pc = (RS1 + IMM_I) & ~1ULL));   
+    MATCH(0x67, {
+        u64 target = (RS1 + IMM_I) & ~1ULL;
+        SET_RD(next_pc);
+        next_pc = target;
+    });
     // BRANCH
     MATCH(0x63, next_pc = exec_branch(cpu, inst, next_pc));            
     // LOAD

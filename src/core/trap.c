@@ -43,6 +43,8 @@ static inline void trap_pop_m(cpu_t *cpu)
 
 void cpu_trap(cpu_t *cpu, u64 cause, u64 tval)
 {
+    cpu->trapped = true;
+    
     u64 deleg = (i64)cause < 0 ? CSR_R(cpu, C_MIDELEG) : CSR_R(cpu, C_MEDELEG);
     bool to_s = (cpu->priv < M) && ((deleg >> (cause & 63)) & 1);
 
