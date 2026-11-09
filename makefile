@@ -70,8 +70,10 @@ $(foreach cat,$(RISCV_TEST_CATEGORIES),$(eval $(call RISCV_TEST_RULE,$(cat))))
 test: all $(RISCV_TEST_BINS)
 	@test -n "$(RISCV_TEST_BINS)" || (echo "[test] no riscv-tests found"; exit 1)
 	@set -e; for image in $(RISCV_TEST_BINS); do \
+		elf=$${image%.bin}.elf; \
+		tohost=$$(riscv64-linux-gnu-nm -g --defined-only $$elf | awk '$$3 == "tohost" { print "0x" $$1 }'); \
 		echo "[TEST] $$image"; \
-		./$(BUILD_DIR)/$(TARGET) $$image; \
+		./$(BUILD_DIR)/$(TARGET) $$image $$tohost; \
 	done
 	@echo "[test] riscv-tests PASS"
 

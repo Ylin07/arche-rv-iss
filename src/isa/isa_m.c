@@ -33,7 +33,7 @@ void exec_op_m32(cpu_t *cpu, u32 inst)
 
     switch (F3) {
     // MULW
-    MATCH(0x0, SET_RD((i32)(s1 * s2)));
+    MATCH(0x0, SET_RD((i64)(i32)((u32)s1 * (u32)s2)));
     // DIVW
     MATCH(0x4, SET_RD(s2 == 0 ? -1 : 
                (s1 == INT32_MIN && s2 == -1) ? (i32)INT32_MIN : (i32)(s1 / s2)));
