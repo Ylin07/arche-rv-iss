@@ -1,5 +1,6 @@
 #include "internal.h"
 #include "rv/mem.h"
+#include "rv/trap.h"
 
 #define AMO_CALC(old, src, is_signed, op) ({                                \
     (op == 0) ? (src) :                                                     \

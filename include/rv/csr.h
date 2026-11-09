@@ -2,7 +2,7 @@
 
 #include "rv/bits.h"
 #include "rv/types.h"
-#include  "rv/cpu.h"
+#include "rv/cpu.h"
 
 enum {
     C_CYCLE     = 0xC00,
@@ -83,42 +83,4 @@ static inline void csr_write(cpu_t *cpu, u16 csr, u64 val)
 #define CSR_R(cpu, c)       csr_read(cpu, (c))
 #define CSR_W(cpu, c, v)    csr_write(cpu, (c), (u64)(v))
 
-static inline void trap_push_s(cpu_t *cpu)
-{
-    u64 s = CSR_R(cpu, C_MSTATUS);
-    s = BITS_SET(s, F_SPIE, BITS(s, F_SIE));
-    s = BITS_SET(s, F_SIE,  0);
-    s = BITS_SET(s, F_SPP,  cpu->priv);
-    CSR_W(cpu, C_MSTATUS, s);
-}
-
-static inline void trap_push_m(cpu_t *cpu)
-{
-    u64 s = CSR_R(cpu, C_MSTATUS);
-    s = BITS_SET(s, F_MPIE, BITS(s, F_MIE));
-    s = BITS_SET(s, F_MIE,  0);
-    s = BITS_SET(s, F_MPP,  cpu->priv);
-    CSR_W(cpu, C_MSTATUS, s);
-}
-
-static inline void trap_pop_s(cpu_t *cpu)
-{
-    u64 s = CSR_R(cpu, C_MSTATUS);
-    cpu->priv = (priv_t)BITS(s, F_SPP);
-
-    s = BITS_SET(s, F_SIE,  BITS(s, F_SPIE));
-    s = BITS_SET(s, F_SPIE, 1);
-    s = BITS_SET(s, F_SPP,  U);
-    CSR_W(cpu, C_MSTATUS, s);
-}
-
-static inline void trap_pop_m(cpu_t *cpu)
-{
-    u64 s = CSR_R(cpu, C_MSTATUS);
-    cpu->priv = (priv_t)BITS(s, F_MPP);
-
-    s = BITS_SET(s, F_MIE,  BITS(s, F_MPIE));
-    s = BITS_SET(s, F_MPIE, 1);
-    s = BITS_SET(s, F_MPP,  U);
-    CSR_W(cpu, C_MSTATUS, s);
-}
+bool csr_op(cpu_t *cpu, u16 csr, u64 *rval, u64 wval, u8 op);

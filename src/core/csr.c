@@ -1,7 +1,6 @@
-#include "rv/cpu.h"
 #include "rv/csr.h"
 
-bool cpu_csr_op(cpu_t *cpu, u16 csr, u64 *rval, u64 wval, u8 op)
+bool csr_op(cpu_t *cpu, u16 csr, u64 *rval, u64 wval, u8 op)
 {
     if (csr >= 4096)
         return false;

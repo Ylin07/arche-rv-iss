@@ -1,5 +1,45 @@
-#include "rv/cpu.h"
 #include "rv/csr.h"
+#include "rv/trap.h"
+
+static inline void trap_push_s(cpu_t *cpu)
+{
+    u64 s = CSR_R(cpu, C_MSTATUS);
+    s = BITS_SET(s, F_SPIE, BITS(s, F_SIE));
+    s = BITS_SET(s, F_SIE,  0);
+    s = BITS_SET(s, F_SPP,  cpu->priv);
+    CSR_W(cpu, C_MSTATUS, s);
+}
+
+static inline void trap_push_m(cpu_t *cpu)
+{
+    u64 s = CSR_R(cpu, C_MSTATUS);
+    s = BITS_SET(s, F_MPIE, BITS(s, F_MIE));
+    s = BITS_SET(s, F_MIE,  0);
+    s = BITS_SET(s, F_MPP,  cpu->priv);
+    CSR_W(cpu, C_MSTATUS, s);
+}
+
+static inline void trap_pop_s(cpu_t *cpu)
+{
+    u64 s = CSR_R(cpu, C_MSTATUS);
+    cpu->priv = (priv_t)BITS(s, F_SPP);
+
+    s = BITS_SET(s, F_SIE,  BITS(s, F_SPIE));
+    s = BITS_SET(s, F_SPIE, 1);
+    s = BITS_SET(s, F_SPP,  U);
+    CSR_W(cpu, C_MSTATUS, s);
+}
+
+static inline void trap_pop_m(cpu_t *cpu)
+{
+    u64 s = CSR_R(cpu, C_MSTATUS);
+    cpu->priv = (priv_t)BITS(s, F_MPP);
+
+    s = BITS_SET(s, F_MIE,  BITS(s, F_MPIE));
+    s = BITS_SET(s, F_MPIE, 1);
+    s = BITS_SET(s, F_MPP,  U);
+    CSR_W(cpu, C_MSTATUS, s);
+}
 
 void cpu_trap(cpu_t *cpu, u64 cause, u64 tval)
 {

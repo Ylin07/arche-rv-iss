@@ -1,4 +1,6 @@
 #include "internal.h"
+#include "rv/trap.h"
+#include "rv/csr.h"
 
 u64 exec_system(cpu_t *cpu, u32 inst, u64 next_pc)
 {
@@ -38,7 +40,7 @@ u64 exec_system(cpu_t *cpu, u32 inst, u64 next_pc)
 
         u8 real_op = (op == 1 || wval != 0) ? op : 0;
 
-        if (!cpu_csr_op(cpu, csr, &old, wval, real_op)) {
+        if (!csr_op(cpu, csr, &old, wval, real_op)) {
             cpu_trap(cpu, ILLEGAL_INSN, inst);
             trapped = true;
         } else {
