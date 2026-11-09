@@ -149,8 +149,9 @@ make DEBUG=0 test
 │   ├── platform/        程序加载
 │   └── main.c           模拟器入口
 ├── test/
-│   ├── link.ld          测试程序链接脚本
-│   └── test.c           RISC-V 集成测试程序
+│   └── riscv-tests/     本地自包含 riscv-tests 子集
+│       ├── env/         裸机测试环境和链接脚本
+│       └── isa/         RV64I、M、A 标准测试
 ├── makefile             构建和测试入口
 └── README.md            项目说明和实现路线
 ```

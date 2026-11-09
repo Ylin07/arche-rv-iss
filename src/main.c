@@ -14,7 +14,7 @@ int main(int argc, char **argv)
     cpu_reset(&cpu, DRAM_BASE);
     while (steps--) {
         cpu_step(&cpu);
-        u64 result = mem_read64(TOHOST);
+        u64 result = mem_read32(TOHOST);
         if (result == 1) return 0;
         if (result != 0) {
             fprintf(stderr, "test failed: tohost=%llu\n",
