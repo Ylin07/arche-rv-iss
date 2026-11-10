@@ -2,15 +2,30 @@
 #include "rv/mem.h"
 #include "rv/trap.h"
 
-#define AMO_CALC(old, src, is_signed, op) ({                                \
-    (op == 0) ? (src) :                                                     \
-    (op == 1) ? ((old) + (src)) :                                           \
-    (op == 2) ? ((old) ^ (src)) :                                           \
-    (op == 3) ? ((old) & (src)) :                                           \
-    (op == 4) ? ((old) | (src)) :                                           \
-    (op == 5) ? ((is_signed ? (i64)(old) < (i64)(src) : (u64)(old) < (u64)(src)) ? (old) : (src)) : \
-                ((is_signed ? (i64)(old) > (i64)(src) : (u64)(old) > (u64)(src)) ? (old) : (src));  \
-})
+static u64 amo_calc(u64 old, u64 src, bool is_signed, u32 op)
+{
+    switch (op) {
+    // AMOSWAP
+    MATCH(0, return src);
+    // AMOADD
+    MATCH(1, return old + src);
+    // AMOXOR
+    MATCH(2, return old ^ src);
+    // AMOAND
+    MATCH(3, return old & src);
+    // AMOOR
+    MATCH(4, return old | src);
+    // AMOMIN / AMOMINU
+    MATCH(5, return is_signed
+                    ? ((i64)old < (i64)src ? old : src)
+                    : (old < src ? old : src));
+    // AMOMAX / AMOMAXU
+    MATCH(6, return is_signed
+                    ? ((i64)old > (i64)src ? old : src)
+                    : (old > src ? old : src));
+    DEFAULT(return old);
+    }
+}
 
 void exec_op_a(cpu_t *cpu, u32 inst)
 {
@@ -47,23 +62,23 @@ void exec_op_a(cpu_t *cpu, u32 inst)
 
         switch (F5) {
         // AMOSWAP.W
-        MATCH(0x01, res = AMO_CALC(old, src, 1, 0));
+        MATCH(0x01, res = amo_calc(old, src, true, 0));
         // AMOADD.W 
-        MATCH(0x00, res = AMO_CALC(old, src, 1, 1));
+        MATCH(0x00, res = amo_calc(old, src, true, 1));
         // AMOXOR.W 
-        MATCH(0x04, res = AMO_CALC(old, src, 1, 2));
+        MATCH(0x04, res = amo_calc(old, src, true, 2));
         // AMOAND.W 
-        MATCH(0x0c, res = AMO_CALC(old, src, 1, 3));
+        MATCH(0x0c, res = amo_calc(old, src, true, 3));
         // AMOOR.W 
-        MATCH(0x08, res = AMO_CALC(old, src, 1, 4));
+        MATCH(0x08, res = amo_calc(old, src, true, 4));
         // AMOMIN.W 
-        MATCH(0x10, res = AMO_CALC((i32)old, (i32)src, 1, 5));
+        MATCH(0x10, res = amo_calc((i32)old, (i32)src, true, 5));
         // AMOMAX.W 
-        MATCH(0x14, res = AMO_CALC((i32)old, (i32)src, 1, 6));
+        MATCH(0x14, res = amo_calc((i32)old, (i32)src, true, 6));
         // AMOMINU.W 
-        MATCH(0x18, res = AMO_CALC(old, src, 0, 5));
+        MATCH(0x18, res = amo_calc(old, src, false, 5));
         // AMOMAXU.W        
-        MATCH(0x1c, res = AMO_CALC(old, src, 0, 6));           
+        MATCH(0x1c, res = amo_calc(old, src, false, 6));
         DEFAULT(cpu_trap(cpu, ILLEGAL_INSN, inst); return);
         }
         mem_write32(addr, res);
@@ -102,23 +117,23 @@ void exec_op_a(cpu_t *cpu, u32 inst)
 
         switch (F5) {
         // AMOSWAP.D
-        MATCH(0x01, res = AMO_CALC(old, src, 1, 0)); 
+        MATCH(0x01, res = amo_calc(old, src, true, 0));
         // AMOADD.D
-        MATCH(0x00, res = AMO_CALC(old, src, 1, 1)); 
+        MATCH(0x00, res = amo_calc(old, src, true, 1));
         // AMOXOR.D
-        MATCH(0x04, res = AMO_CALC(old, src, 1, 2)); 
+        MATCH(0x04, res = amo_calc(old, src, true, 2));
         // AMOAND.D
-        MATCH(0x0c, res = AMO_CALC(old, src, 1, 3)); 
+        MATCH(0x0c, res = amo_calc(old, src, true, 3));
         // AMOOR.D
-        MATCH(0x08, res = AMO_CALC(old, src, 1, 4)); 
+        MATCH(0x08, res = amo_calc(old, src, true, 4));
         // AMOMIN.D
-        MATCH(0x10, res = AMO_CALC((i64)old, (i64)src, 1, 5)); 
+        MATCH(0x10, res = amo_calc(old, src, true, 5));
         // AMOMAX.D
-        MATCH(0x14, res = AMO_CALC((i64)old, (i64)src, 1, 6)); 
+        MATCH(0x14, res = amo_calc(old, src, true, 6));
         // AMOMINU.D
-        MATCH(0x18, res = AMO_CALC(old, src, 0, 5));          
+        MATCH(0x18, res = amo_calc(old, src, false, 5));
         // AMOMAXU.D 
-        MATCH(0x1c, res = AMO_CALC(old, src, 0, 6));           
+        MATCH(0x1c, res = amo_calc(old, src, false, 6));
         DEFAULT(cpu_trap(cpu, ILLEGAL_INSN, inst); return);
         }
         mem_write64(addr, res);
