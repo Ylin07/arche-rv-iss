@@ -1,69 +1,46 @@
 #include "rv/csr.h"
 #include "rv/trap.h"
 
-static inline void trap_push_s(cpu_t *cpu)
+#define TRAP_ENTER(P) do {                                                     \
+    CSR_W(cpu, C_##P##EPC,   cpu->pc);                                         \
+    CSR_W(cpu, C_##P##CAUSE, cause);                                           \
+    CSR_W(cpu, C_##P##TVAL,  tval);                                            \
+    u64 s = CSR_R(cpu, C_##P##STATUS);                                         \
+    s = BITS_SET(s, F_##P##PIE, BITS(s, F_##P##IE));                           \
+    s = BITS_SET(s, F_##P##IE,  0);                                            \
+    s = BITS_SET(s, F_##P##PP,  cpu->priv);                                    \
+    CSR_W(cpu, C_##P##STATUS, s);                                              \
+    cpu->priv = P;                                                             \
+    cpu->pc   = CSR_R(cpu, C_##P##TVEC) & ~3ULL;                               \
+} while (0)
+
+#define TRAP_RETURN(P) do {                                                    \
+    u64 s = CSR_R(cpu, C_##P##STATUS);                                         \
+    cpu->priv = (priv_t)BITS(s, F_##P##PP);                                    \
+    s = BITS_SET(s, F_##P##IE,  BITS(s, F_##P##PIE));                          \
+    s = BITS_SET(s, F_##P##PIE, 1);                                            \
+    s = BITS_SET(s, F_##P##PP,  U);                                            \
+    CSR_W(cpu, C_##P##STATUS, s);                                              \
+    cpu->pc = CSR_R(cpu, C_##P##EPC);                                          \
+} while (0)
+
+
+static inline priv_t trap_target(const cpu_t *cpu, u64 cause)
 {
-    u64 s = CSR_R(cpu, C_MSTATUS);
-    s = BITS_SET(s, F_SPIE, BITS(s, F_SIE));
-    s = BITS_SET(s, F_SIE,  0);
-    s = BITS_SET(s, F_SPP,  cpu->priv);
-    CSR_W(cpu, C_MSTATUS, s);
-}
+    bool interrupt = cause & INTERRUPT_BIT;
+    u64 code = cause & ~INTERRUPT_BIT;
+    u64 deleg = interrupt ? CSR_R(cpu, C_MIDELEG) : CSR_R(cpu, C_MEDELEG);
 
-static inline void trap_push_m(cpu_t *cpu)
-{
-    u64 s = CSR_R(cpu, C_MSTATUS);
-    s = BITS_SET(s, F_MPIE, BITS(s, F_MIE));
-    s = BITS_SET(s, F_MIE,  0);
-    s = BITS_SET(s, F_MPP,  cpu->priv);
-    CSR_W(cpu, C_MSTATUS, s);
-}
-
-static inline void trap_pop_s(cpu_t *cpu)
-{
-    u64 s = CSR_R(cpu, C_MSTATUS);
-    cpu->priv = (priv_t)BITS(s, F_SPP);
-
-    s = BITS_SET(s, F_SIE,  BITS(s, F_SPIE));
-    s = BITS_SET(s, F_SPIE, 1);
-    s = BITS_SET(s, F_SPP,  U);
-    CSR_W(cpu, C_MSTATUS, s);
-}
-
-static inline void trap_pop_m(cpu_t *cpu)
-{
-    u64 s = CSR_R(cpu, C_MSTATUS);
-    cpu->priv = (priv_t)BITS(s, F_MPP);
-
-    s = BITS_SET(s, F_MIE,  BITS(s, F_MPIE));
-    s = BITS_SET(s, F_MPIE, 1);
-    s = BITS_SET(s, F_MPP,  U);
-    CSR_W(cpu, C_MSTATUS, s);
+    return (cpu->priv < M && code < 64 && ((deleg >> code) & 1)) ? S : M;
 }
 
 void cpu_trap(cpu_t *cpu, u64 cause, u64 tval)
 {
     cpu->trapped = true;
-    
-    u64 deleg = (i64)cause < 0 ? CSR_R(cpu, C_MIDELEG) : CSR_R(cpu, C_MEDELEG);
-    bool to_s = (cpu->priv < M) && ((deleg >> (cause & 63)) & 1);
-
-    if (to_s) {
-        CSR_W(cpu, C_SEPC,   cpu->pc);
-        CSR_W(cpu, C_SCAUSE, cause);
-        CSR_W(cpu, C_STVAL,  tval);
-
-        trap_push_s(cpu);
-        cpu->priv = S;
-        cpu->pc   = CSR_R(cpu, C_STVEC) & ~3ULL;
+    if (trap_target(cpu, cause) == S) {
+        TRAP_ENTER(S);
     } else {
-        CSR_W(cpu, C_MEPC,   cpu->pc);
-        CSR_W(cpu, C_MCAUSE, cause);
-        CSR_W(cpu, C_MTVAL,  tval);
-
-        trap_push_m(cpu);
-        cpu->priv = M;
-        cpu->pc   = CSR_R(cpu, C_MTVEC) & ~3ULL;
+        TRAP_ENTER(M);
     }
 }
 
@@ -75,10 +52,8 @@ void cpu_xret(cpu_t *cpu, priv_t from)
     }
 
     if (from == S) {
-        trap_pop_s(cpu);
-        cpu->pc = CSR_R(cpu, C_SEPC);
+        TRAP_RETURN(S);
     } else {
-        trap_pop_m(cpu);
-        cpu->pc = CSR_R(cpu, C_MEPC);
+        TRAP_RETURN(M);
     }
 }
