@@ -11,7 +11,10 @@
     s = BITS_SET(s, F_##P##PP,  cpu->priv);                                    \
     CSR_W(cpu, C_##P##STATUS, s);                                              \
     cpu->priv = P;                                                             \
-    cpu->pc   = CSR_R(cpu, C_##P##TVEC) & ~3ULL;                               \
+    u64 vec = CSR_R(cpu, C_##P##TVEC);                                         \
+    cpu->pc = vec & ~3ULL;                                                     \
+    if ((vec & 3) == 1 && (cause & INTERRUPT_BIT))                             \
+        cpu->pc += 4 * (cause & ~INTERRUPT_BIT);                               \
 } while (0)
 
 #define TRAP_RETURN(P) do {                                                    \

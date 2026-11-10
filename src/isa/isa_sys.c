@@ -18,11 +18,13 @@ u64 exec_system(cpu_t *cpu, u32 inst, u64 next_pc)
         MATCH(0x10200073, cpu_xret(cpu, S));
         // MRET
         MATCH(0x30200073, cpu_xret(cpu, M));
+        // WFI
+        MATCH(0x10500073, (void)0);
         // SFENCE.VMA
         MATCH(0x12000073, (void)0);
         DEFAULT(cpu_trap(cpu, ILLEGAL_INSN, inst));
         }
-        trapped = (inst != 0x12000073);
+        trapped = (inst != 0x12000073 && inst != 0x10500073);
     });
 
     // RESERVED

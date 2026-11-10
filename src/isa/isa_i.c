@@ -1,5 +1,6 @@
 #include "internal.h"
 #include "rv/mem.h"
+#include "rv/trap.h"
 
 u64 exec_branch(cpu_t *cpu, u32 inst, u64 next_pc)
 {
@@ -19,7 +20,14 @@ u64 exec_branch(cpu_t *cpu, u32 inst, u64 next_pc)
     MATCH(0x7, take = ((u64)RS1 >= (u64)RS2));
     DEFAULT((void)0);
     }
-    return take ? (cpu->pc + IMM_B) : next_pc;
+    if (!take) return next_pc;
+
+    u64 target = cpu->pc + IMM_B;
+    if (target & 3) {
+        cpu_trap(cpu, INST_ADDR_MISALIGNED, target);
+        return cpu->pc;
+    }
+    return target;
 }
 
 void exec_load(cpu_t *cpu, u32 inst)

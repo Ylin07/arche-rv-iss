@@ -5,6 +5,7 @@
 u64 isa_exec(cpu_t *cpu, u32 inst)
 {
     u64 next_pc = cpu->pc + 4;
+    u64 target;
 
     switch (BITS(inst, 6, 0)) {
     // LUI
@@ -12,10 +13,16 @@ u64 isa_exec(cpu_t *cpu, u32 inst)
     // AUIPC
     MATCH(0x17, SET_RD(cpu->pc + IMM_U));                              
     // JAL
-    MATCH(0x6F, (SET_RD(next_pc), next_pc = cpu->pc + IMM_J));         
+    MATCH(0x6F, {
+        target = cpu->pc + IMM_J;
+        if (target & 3) goto misaligned;
+        SET_RD(next_pc);
+        next_pc = target;
+    });
     // JALR
     MATCH(0x67, {
-        u64 target = (RS1 + IMM_I) & ~1ULL;
+        target = (RS1 + IMM_I) & ~1ULL;
+        if (target & 3) goto misaligned;
         SET_RD(next_pc);
         next_pc = target;
     });
@@ -47,5 +54,9 @@ u64 isa_exec(cpu_t *cpu, u32 inst)
     }
 
     return next_pc;
+
+misaligned:
+    cpu_trap(cpu, INST_ADDR_MISALIGNED, target);
+    return cpu->pc;
 }
 
