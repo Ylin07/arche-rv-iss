@@ -34,6 +34,28 @@ static inline priv_t trap_target(const cpu_t *cpu, u64 cause)
     return (cpu->priv < M && code < 64 && ((deleg >> code) & 1)) ? S : M;
 }
 
+bool cpu_check_interrupt(cpu_t *cpu)
+{
+    u64 ready = CSR_R(cpu, C_MIP) & CSR_R(cpu, C_MIE);
+    if (!ready) return false;
+
+    u64 s = CSR_R(cpu, C_MSTATUS);
+    u64 deleg = CSR_R(cpu, C_MIDELEG);
+
+    u64 m_mask = (cpu->priv < M || (cpu->priv == M && BITS(s, F_MIE))) ? ~deleg : 0;
+    u64 s_mask = (cpu->priv < S || (cpu->priv == S && BITS(s, F_SIE))) ?  deleg : 0;
+    u64 pending = ready & (m_mask | s_mask);
+
+    for (unsigned i = 0; i < sizeof(IRQ_PRIO); i++) {
+        u8 code = IRQ_PRIO[i];
+        if (pending & (1ULL << code)) {
+            cpu_trap(cpu, INTERRUPT_BIT | code, 0);
+            return true;
+        }
+    }
+    return false;
+}
+
 void cpu_trap(cpu_t *cpu, u64 cause, u64 tval)
 {
     cpu->trapped = true;

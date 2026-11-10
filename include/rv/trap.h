@@ -4,6 +4,22 @@
 
 #define INTERRUPT_BIT (1ULL << 63)
 
+// interrupt cause codes
+enum {
+    IRQ_SSIP = 1,
+    IRQ_MSIP = 3,
+    IRQ_STIP = 5,
+    IRQ_MTIP = 7,
+    IRQ_SEIP = 9,
+    IRQ_MEIP = 11,
+};
+
+// interrupt priority
+static const u8 IRQ_PRIO[] = {
+    IRQ_MEIP, IRQ_MSIP, IRQ_MTIP,
+    IRQ_SEIP, IRQ_SSIP, IRQ_STIP,
+};
+
 // Trap causes
 enum {
     INST_ADDR_MISALIGNED  = 0,
@@ -25,3 +41,4 @@ enum {
 
 void cpu_trap(cpu_t *cpu, u64 cause, u64 tval);
 void cpu_xret(cpu_t *cpu, priv_t from);
+bool cpu_check_interrupt(cpu_t *cpu);
