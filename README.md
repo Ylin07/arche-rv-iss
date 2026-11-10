@@ -134,7 +134,12 @@ RV64GC + Zicsr + Zifencei + Privileged ISA
 ```sh
 make test
 make DEBUG=0 test
+make test TEST_GROUPS="rv64mi rv64si"
 ```
+
+`make test` 运行全部测试；通过 `TEST_GROUPS` 选择测试分组。
+测试源码均位于 `test/riscv-tests/`，失败后继续运行并汇总结果。
+特权测试包含尚未实现的功能，当前不保证全部通过。
 
 ## 目录结构
 

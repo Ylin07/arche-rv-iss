@@ -26,20 +26,16 @@ DEPS        := $(OBJS:.o=.d)
 
 .PHONY: all clean run test
 
-RISCV_TESTS         ?= test/riscv-tests
-RISCV_TEST_CATEGORIES ?= rv64ui rv64um rv64ua
-RISCV_TEST_ISA      := $(RISCV_TESTS)/isa
-RISCV_TEST_ENV      := $(RISCV_TESTS)/env
-RISCV_TEST_BUILD    := $(BUILD_DIR)/riscv-tests
-RISCV_CC            ?= riscv64-linux-gnu-gcc
-RISCV_OBJCOPY       ?= riscv64-linux-gnu-objcopy
-RISCV_CFLAGS        := -march=rv64g -mabi=lp64d -static -mcmodel=medany \
-                       -fvisibility=hidden -nostdlib -nostartfiles \
-                       -I$(RISCV_TEST_ENV) -I$(RISCV_TEST_ISA)/macros/scalar \
-                       -T$(RISCV_TEST_ENV)/link.ld
-
-RISCV_TEST_SOURCES := $(foreach cat,$(RISCV_TEST_CATEGORIES),$(wildcard $(RISCV_TEST_ISA)/$(cat)/*.S))
-RISCV_TEST_BINS    := $(foreach cat,$(RISCV_TEST_CATEGORIES),$(foreach src,$(wildcard $(RISCV_TEST_ISA)/$(cat)/*.S),$(RISCV_TEST_BUILD)/$(cat)-p-$(notdir $(patsubst %.S,%,$(src))).bin))
+RISCV_PREFIX ?= riscv64-linux-gnu-
+TEST_GROUPS  ?= rv64ui rv64um rv64ua rv64mi rv64si
+TEST_DIR     := test/riscv-tests
+TEST_BUILD   := $(BUILD_DIR)/tests
+TEST_SRCS    := $(foreach group,$(TEST_GROUPS),$(wildcard $(TEST_DIR)/isa/$(group)/*.S))
+TEST_BINS    := $(patsubst $(TEST_DIR)/isa/%.S,$(TEST_BUILD)/%.bin,$(TEST_SRCS))
+TEST_FLAGS   := -march=rv64g -mabi=lp64d -static -mcmodel=medany \
+                -fvisibility=hidden -nostdlib -nostartfiles \
+                -I$(TEST_DIR)/env -I$(TEST_DIR)/isa/macros/scalar \
+                -T$(TEST_DIR)/env/link.ld
 
 all: $(BUILD_DIR)/$(TARGET)
 
@@ -57,25 +53,25 @@ $(BUILD_DIR)/%.o: $(SRC_DIR)/%.c
 run: all
 	@./$(BUILD_DIR)/$(TARGET)
 
-# Build one standard riscv-tests binary from its assembly source.
-define RISCV_TEST_RULE
-$(RISCV_TEST_BUILD)/$(1)-p-%.bin: $(RISCV_TEST_ISA)/$(1)/%.S $(RISCV_TEST_ENV)/link.ld $(RISCV_TEST_ENV)/riscv_test.h $(RISCV_TEST_ENV)/../encoding.h $(RISCV_TEST_ISA)/macros/scalar/test_macros.h
-	@mkdir -p $$(dir $$@)
-	@echo "[TEST-CC] $$<"
-	@$(RISCV_CC) $(RISCV_CFLAGS) $$< -o $$(patsubst %.bin,%.elf,$$@)
-	@$(RISCV_OBJCOPY) -O binary $$(patsubst %.bin,%.elf,$$@) $$@
-endef
-$(foreach cat,$(RISCV_TEST_CATEGORIES),$(eval $(call RISCV_TEST_RULE,$(cat))))
+$(TEST_BUILD)/%.bin: $(TEST_DIR)/isa/%.S $(TEST_DIR)/env/link.ld
+	@mkdir -p $(dir $@)
+	@echo "[TEST-CC] $<"
+	@$(RISCV_PREFIX)gcc $(TEST_FLAGS) -MMD -MP -MF $@.d -MT $@ $< -o $(@:.bin=.elf)
+	@$(RISCV_PREFIX)objcopy -O binary $(@:.bin=.elf) $@
 
-test: all $(RISCV_TEST_BINS)
-	@test -n "$(RISCV_TEST_BINS)" || (echo "[test] no riscv-tests found"; exit 1)
-	@set -e; for image in $(RISCV_TEST_BINS); do \
-		elf=$${image%.bin}.elf; \
-		tohost=$$(riscv64-linux-gnu-nm -g --defined-only $$elf | awk '$$3 == "tohost" { print "0x" $$1 }'); \
-		echo "[TEST] $$image"; \
-		./$(BUILD_DIR)/$(TARGET) $$image $$tohost; \
-	done
-	@echo "[test] riscv-tests PASS"
+-include $(wildcard $(TEST_BUILD)/*/*.bin.d)
+
+test: all $(TEST_BINS)
+	@test -n "$(TEST_BINS)" || (echo "[test] no tests found"; exit 1)
+	@passed=0; failed=0; for image in $(TEST_BINS); do \
+		tohost=$$($(RISCV_PREFIX)nm -g --defined-only $${image%.bin}.elf | awk '$$3 == "tohost" { print "0x" $$1 }'); \
+		if test -n "$$tohost" && ./$(BUILD_DIR)/$(TARGET) $$image $$tohost; then \
+			echo "[PASS] $$image"; passed=$$((passed + 1)); \
+		else \
+			echo "[FAIL] $$image"; failed=$$((failed + 1)); \
+		fi; \
+	done; \
+	echo "[test] PASS=$$passed FAIL=$$failed"; test $$failed -eq 0
 
 
 clean:
