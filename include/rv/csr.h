@@ -76,6 +76,19 @@ static inline void csr_write(cpu_t *cpu, u16 csr, u64 val)
 #define F_MPIE      7, 7
 #define F_SPP       8, 8
 #define F_MPP      12, 11
+#define F_MPRV     17, 17
+#define F_SUM      18, 18
+#define F_MXR      19, 19
+
+// Fields and modes in SATP
+#define F_SATP_MODE 63, 60
+#define F_SATP_ASID 59, 44
+#define F_SATP_PPN  43, 0
+
+enum {
+    SATP_BARE = 0,
+    SATP_SV39 = 8,
+};
 
 #define CSR_PRIV(c)     ((priv_t)BITS((c), 9, 8))
 #define CSR_RO(c)       (BITS((c), 11, 10) == 3)
